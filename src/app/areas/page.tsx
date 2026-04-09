@@ -30,7 +30,7 @@ import {
   Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { CHART_COLORS as COLORS, PIE_COLORS } from "@/lib/chart-colors";
+import { CHART_COLORS as COLORS, PIE_COLORS, useChartColors } from "@/lib/chart-colors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any) {
@@ -87,6 +87,7 @@ interface AreaRow {
 }
 
 export default function AreasPage() {
+  const chartColors = useChartColors();
   const { data: areasData, isLoading } = useAreas(50);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const { data: detailData } = useAreaDetail(selectedArea || "");
@@ -106,8 +107,8 @@ export default function AreasPage() {
         {areas.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
             <ScatterChart>
-              <XAxis type="number" dataKey="avg_sqm_price" name="Avg/sqm" tick={{ fontSize: 11, fill: COLORS.text }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} />
-              <YAxis type="number" dataKey="yoy_price_change" name="YoY %" tick={{ fontSize: 11, fill: COLORS.text }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+              <XAxis type="number" dataKey="avg_sqm_price" name="Avg/sqm" tick={{ fontSize: 11, fill: chartColors.text }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} />
+              <YAxis type="number" dataKey="yoy_price_change" name="YoY %" tick={{ fontSize: 11, fill: chartColors.text }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
               <ZAxis type="number" dataKey="sales_count" range={[40, 400]} />
               <Tooltip content={<ScatterTooltip />} />
               <Scatter
@@ -182,8 +183,8 @@ export default function AreasPage() {
             <ChartContainer title="Price Trend" subtitle="Avg price per sqm (monthly)">
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={detail.trends}>
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} interval="preserveStartEnd" axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: chartColors.text }} tickLine={false} interval="preserveStartEnd" axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: chartColors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                   <Tooltip content={<ChartTooltip />} />
                   <Line type="monotone" dataKey="avg_sqm_price" name="Avg/sqm" stroke={COLORS.primary} strokeWidth={2} dot={false} />
                 </LineChart>
@@ -194,8 +195,8 @@ export default function AreasPage() {
             <ChartContainer title="Sales Volume" subtitle="Monthly transaction count">
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={detail.trends}>
-                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} interval="preserveStartEnd" axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="period" tick={{ fontSize: 11, fill: chartColors.text }} tickLine={false} interval="preserveStartEnd" axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: chartColors.text }} tickLine={false} axisLine={false} />
                   <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="sales_count" name="Sales" fill={COLORS.secondary} radius={[3, 3, 0, 0]} />
                 </BarChart>
@@ -206,8 +207,8 @@ export default function AreasPage() {
             <ChartContainer title="By Room Type" subtitle="Avg price and count (last 3 months)">
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={detail.room_breakdown} layout="vertical">
-                  <XAxis type="number" tick={{ fontSize: 11, fill: COLORS.text }} tickFormatter={(v) => formatAED(v)} axisLine={false} />
-                  <YAxis type="category" dataKey="room" tick={{ fontSize: 11, fill: COLORS.text }} width={60} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: chartColors.text }} tickFormatter={(v) => formatAED(v)} axisLine={false} />
+                  <YAxis type="category" dataKey="room" tick={{ fontSize: 11, fill: chartColors.text }} width={60} />
                   <Tooltip content={<ChartTooltip />} />
                   <Bar dataKey="avg_price" name="Avg Price" fill={COLORS.tertiary} radius={[0, 3, 3, 0]} />
                 </BarChart>

@@ -17,7 +17,7 @@ interface WindowStatsRow {
   avg_price_sqm: number;
   offplan_ratio: number;
   mortgage_count: number;
-  avg_size_sqm: number;
+  median_size_sqm: number;
 }
 
 function inclusiveDays(start: string, end: string): number {
@@ -42,9 +42,9 @@ async function getWindowStats(start: string, end: string) {
           ELSE 0
         END AS offplan_ratio,
         COUNT(*) FILTER (WHERE trans_group_en = 'Mortgage')::int AS mortgage_count,
-        AVG(procedure_area) FILTER (
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY procedure_area) FILTER (
           WHERE trans_group_en = 'Sales' AND procedure_area > 0
-        )::double precision AS avg_size_sqm
+        )::double precision AS median_size_sqm
       FROM transactions_live
       WHERE instance_date BETWEEN ${start}::date AND ${end}::date
     `
@@ -112,10 +112,10 @@ export async function GET(request: NextRequest) {
       period_type: "date_window",
     },
     {
-      metric: "Avg Transaction Size (sqm)",
-      pre_value: preStats.avg_size_sqm,
-      post_value: postStats.avg_size_sqm,
-      change_pct: pct(postStats.avg_size_sqm, preStats.avg_size_sqm),
+      metric: "Median Size (sqm)",
+      pre_value: preStats.median_size_sqm,
+      post_value: postStats.median_size_sqm,
+      change_pct: pct(postStats.median_size_sqm, preStats.median_size_sqm),
       change_kind: "percent",
       period_type: "date_window",
     },

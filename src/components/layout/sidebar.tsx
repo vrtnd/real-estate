@@ -15,7 +15,10 @@ import {
   Globe,
   Menu,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -29,6 +32,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -151,13 +155,26 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className="px-4 py-3 border-t border-border">
-          <p className="text-[10px] text-muted-foreground">
-            DLD Data · 2004 – Apr 2026
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            1,677,976 transactions
-          </p>
+        <div className="px-3 py-3 border-t border-border flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground">
+              DLD · 2004 – Apr 2026
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              1.68M transactions
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md hover:bg-sidebar-accent transition-colors shrink-0"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Moon className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
         </div>
       </aside>
     </>

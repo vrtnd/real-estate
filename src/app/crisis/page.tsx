@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { useState } from "react";
-import { CHART_COLORS as COLORS, CRISIS_LINE_COLORS as CRISIS_COLORS } from "@/lib/chart-colors";
+import { useChartColors, CRISIS_LINE_COLORS as CRISIS_COLORS } from "@/lib/chart-colors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any) {
@@ -56,6 +56,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function CrisisPage() {
+  const COLORS = useChartColors();
   const { data: compData } = useCrisisComparison();
   const [indexedMetric, setIndexedMetric] = useState("sales_count");
   const { data: indexedData } = useCrisisIndexed(indexedMetric, 12);
@@ -251,7 +252,7 @@ export default function CrisisPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: COLORS.text }} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <ReferenceLine y={100} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
+                <ReferenceLine y={100} stroke={COLORS.muted} strokeDasharray="3 3" />
                 {HISTORICAL_CRISES.map((c) => (
                   <Line
                     key={c.id}

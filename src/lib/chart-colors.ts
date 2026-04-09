@@ -1,27 +1,50 @@
-// DefiLlama blue palette — blue primary, green accent
-export const CHART_COLORS = {
-  // Primary data
-  primary: "#4e80ee",      // DefiLlama blue
-  secondary: "#0dff81",    // DefiLlama green accent
-  tertiary: "#f5a623",     // Warm amber
-  red: "#e05555",          // Soft red
-  purple: "#9678b8",       // Lavender
-  cyan: "#4ec8d4",         // Bright teal
-  orange: "#e8943a",       // Orange
+import { useTheme } from "@/lib/theme";
 
-  // UI
+// Data colors — work on both light and dark backgrounds
+const DATA_COLORS = {
+  primary: "#4e80ee",
+  secondary: "#0dff81",
+  tertiary: "#f5a623",
+  red: "#e05555",
+  purple: "#9678b8",
+  cyan: "#4ec8d4",
+  orange: "#e8943a",
+};
+
+const DARK_UI = {
   grid: "rgba(255,255,255,0.04)",
   text: "rgba(255,255,255,0.40)",
   muted: "rgba(255,255,255,0.10)",
+  readyFill: "rgba(255,255,255,0.08)",
 };
 
+const LIGHT_UI = {
+  grid: "rgba(0,0,0,0.06)",
+  text: "rgba(0,0,0,0.45)",
+  muted: "rgba(0,0,0,0.08)",
+  readyFill: "rgba(0,0,0,0.06)",
+};
+
+// Static export for data colors that don't change with theme
+export const CHART_COLORS = {
+  ...DATA_COLORS,
+  ...DARK_UI,
+};
+
+// Hook that returns theme-aware chart colors
+export function useChartColors() {
+  const { theme } = useTheme();
+  const ui = theme === "light" ? LIGHT_UI : DARK_UI;
+  return { ...DATA_COLORS, ...ui };
+}
+
 export const PIE_COLORS = [
-  CHART_COLORS.primary,
-  CHART_COLORS.secondary,
-  CHART_COLORS.tertiary,
-  CHART_COLORS.purple,
-  CHART_COLORS.cyan,
-  CHART_COLORS.red,
+  DATA_COLORS.primary,
+  DATA_COLORS.secondary,
+  DATA_COLORS.tertiary,
+  DATA_COLORS.purple,
+  DATA_COLORS.cyan,
+  DATA_COLORS.red,
 ];
 
 export const PROPERTY_COLORS: Record<string, string> = {

@@ -59,7 +59,7 @@ const CrisisMap = dynamic(
   () => import("@/components/charts/crisis-map").then((m) => m.CrisisMap),
   { ssr: false, loading: () => <div className="w-full h-[340px] bg-card rounded-lg animate-pulse" /> }
 );
-import { CHART_COLORS } from "@/lib/chart-colors";
+import { CHART_COLORS, useChartColors } from "@/lib/chart-colors";
 
 /* ─── Types ─── */
 
@@ -356,6 +356,7 @@ function DailyTooltip({ active, payload, label }: any) {
 /* ─── Page Component ─── */
 
 export default function OverviewPage() {
+  const colors = useChartColors();
   const [viewMode, setViewMode] = useState<ViewMode>("event");
   const [marketPreset, setMarketPreset] = useState<MarketPreset>("5y");
   const [marketGranularity, setMarketGranularity] = useState<TrendGranularity>("week");
@@ -696,10 +697,10 @@ export default function OverviewPage() {
               ) : (
                 <ResponsiveContainer width="100%" height={350}>
                   <ComposedChart data={dailyWithMa}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
                     <Tooltip content={<DailyTooltip />} />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.8}
                       label={{ value: EVENT_PRESETS[eventPreset].label, fill: "#f5a623", fontSize: 10, position: "top" }} />
@@ -723,12 +724,12 @@ export default function OverviewPage() {
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
                   <ComposedChart data={dailyWithMa}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
                       domain={["dataMin - 2000", "dataMax + 2000"]} />
                     <Tooltip content={<DailyTooltip />} />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date} yAxisId="left" stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
@@ -752,10 +753,10 @@ export default function OverviewPage() {
                     const w = arr.slice(Math.max(0, i - 6), i + 1);
                     return { ...p, mortgage_ma7: Math.round(w.reduce((s, x) => s + x.mortgages, 0) / w.length) };
                   })}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
                     <Tooltip content={<DailyTooltip />} />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
                     <Bar dataKey="mortgages" name="Daily Mortgages" fill={CHART_COLORS.purple} fillOpacity={0.3} radius={[1, 1, 0, 0]} />
@@ -847,10 +848,10 @@ export default function OverviewPage() {
               {recoveryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={recoveryData}>
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
                     <Tooltip content={<ChartTooltip granularity="month" />} />
-                    <ReferenceLine y={100} stroke={CHART_COLORS.muted} strokeDasharray="3 3" />
+                    <ReferenceLine y={100} stroke={colors.muted} strokeDasharray="3 3" />
                     <Line dataKey="covid_volume" name="COVID Volume" stroke={CHART_COLORS.red} strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     <Line dataKey="hormuz_volume" name="Hormuz Volume" stroke={CHART_COLORS.primary} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
                   </LineChart>
@@ -868,10 +869,10 @@ export default function OverviewPage() {
               {recoveryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <LineChart data={recoveryData}>
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} domain={[60, 140]} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} domain={[60, 140]} />
                     <Tooltip content={<ChartTooltip granularity="month" />} />
-                    <ReferenceLine y={100} stroke={CHART_COLORS.muted} strokeDasharray="3 3" />
+                    <ReferenceLine y={100} stroke={colors.muted} strokeDasharray="3 3" />
                     <Line dataKey="covid_price" name="COVID Price" stroke={CHART_COLORS.red} strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     <Line dataKey="hormuz_price" name="Hormuz Price" stroke={CHART_COLORS.primary} strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
                   </LineChart>
@@ -892,9 +893,9 @@ export default function OverviewPage() {
               {composition.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={composition}>
-                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} interval="preserveStartEnd" minTickGap={40} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
                     <Tooltip content={<DailyTooltip />} />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date.slice(0, 10)} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
                     <Bar dataKey="primary_sales" name="Primary (Pre-reg)" stackId="a" fill={CHART_COLORS.primary} />
@@ -915,9 +916,9 @@ export default function OverviewPage() {
               {yoyPoints.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <ComposedChart data={yoyPoints}>
-                    <XAxis dataKey="week_num" tick={{ fontSize: 10, fill: CHART_COLORS.text }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="week_num" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => `W${v}`} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
                     <Tooltip content={({ active, payload, label }) => {
                       if (!active || !payload?.length) return null;
                       return (
@@ -934,7 +935,7 @@ export default function OverviewPage() {
                     }} />
                     <ReferenceLine x={10} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.6}
                       label={{ value: "Hormuz", fill: "#f5a623", fontSize: 10, position: "top" }} />
-                    <Bar dataKey="prev_year" name="2025" fill={CHART_COLORS.muted} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="prev_year" name="2025" fill={colors.muted} radius={[2, 2, 0, 0]} />
                     <Bar dataKey="curr_year" name="2026" radius={[2, 2, 0, 0]}>
                       {yoyPoints.map((pt, i) => (
                         <Cell key={i} fill={pt.week_num >= 10 ? CHART_COLORS.red : CHART_COLORS.primary}
@@ -1030,10 +1031,10 @@ export default function OverviewPage() {
               {volumeLoading ? <div className="h-[380px] skeleton" /> : (
                 <ResponsiveContainer width="100%" height={380}>
                   <AreaChart data={volumeTrend}>
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
+                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
                       tickFormatter={(v) => formatPeriodLabel(v, activeWindow.granularity)} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1e9).toFixed(0)}B`} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1e9).toFixed(0)}B`} />
                     <Tooltip content={<ChartTooltip granularity={activeWindow.granularity} />} />
                     {visibleMarkers.map((m) => (
                       <ReferenceLine key={m.id} x={m.marker} yAxisId="left" stroke={m.id === "hormuz" ? "#f5a623" : "#9678b8"} strokeDasharray="4 4" strokeOpacity={0.6}
@@ -1059,9 +1060,9 @@ export default function OverviewPage() {
               {priceLoading ? <div className="h-[280px] skeleton" /> : (
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={priceTrend}>
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
+                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
                       tickFormatter={(v) => formatPeriodLabel(v, activeWindow.granularity)} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<ChartTooltip granularity={activeWindow.granularity} />} />
                     {visibleMarkers.map((m) => <ReferenceLine key={m.id} x={m.marker} stroke={m.id === "hormuz" ? "#f5a623" : "#9678b8"} strokeDasharray="4 4" strokeOpacity={0.4} />)}
                     <Line type="monotone" dataKey="avg_sqm_price" name="Avg Price/sqm" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
@@ -1074,13 +1075,13 @@ export default function OverviewPage() {
               {offplanLoading ? <div className="h-[280px] skeleton" /> : (
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={offplanTrend}>
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
+                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={20}
                       tickFormatter={(v) => formatPeriodLabel(v, activeWindow.granularity)} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<ChartTooltip granularity={activeWindow.granularity} />} />
                     {visibleMarkers.map((m) => <ReferenceLine key={m.id} x={m.marker} stroke={m.id === "hormuz" ? "#f5a623" : "#9678b8"} strokeDasharray="4 4" strokeOpacity={0.4} />)}
                     <Bar dataKey="offplan_count" name="Off-Plan" stackId="a" fill={CHART_COLORS.secondary} />
-                    <Bar dataKey="ready_count" name="Ready" stackId="a" fill="rgba(255,255,255,0.08)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="ready_count" name="Ready" stackId="a" fill={colors.readyFill} radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -1094,7 +1095,7 @@ export default function OverviewPage() {
                 <div className="space-y-3 pt-2">
                   {txTypeData.map((item, i) => {
                     const pct = txTotal > 0 ? (item.value / txTotal) * 100 : 0;
-                    const colors = [CHART_COLORS.primary, CHART_COLORS.secondary, CHART_COLORS.purple];
+                    const barColors = [CHART_COLORS.primary, CHART_COLORS.secondary, CHART_COLORS.purple];
                     return (
                       <div key={item.name}>
                         <div className="flex items-center justify-between mb-1">
@@ -1102,7 +1103,7 @@ export default function OverviewPage() {
                           <span className="text-xs text-muted-foreground">{formatNumber(item.value)} <span className="text-[10px]">({pct.toFixed(1)}%)</span></span>
                         </div>
                         <div className="h-2 rounded-full bg-muted/30 overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, backgroundColor: colors[i] }} />
+                          <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, backgroundColor: barColors[i] }} />
                         </div>
                       </div>
                     );
@@ -1116,8 +1117,8 @@ export default function OverviewPage() {
               {yearlyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={230}>
                   <BarChart data={yearlyData}>
-                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: CHART_COLORS.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<ChartTooltip granularity="month" />} />
                     <Bar dataKey="count" name="Sales" radius={[3, 3, 0, 0]}>
                       {yearlyData.map((_, index) => (

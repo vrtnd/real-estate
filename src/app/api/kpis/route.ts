@@ -12,7 +12,7 @@ interface MonthlyRow {
   sales_avg_sqm_price: number;
   sales_avg_price: number;
   offplan_ratio: number;
-  sales_avg_area: number;
+  sales_median_area: number;
 }
 
 export async function GET(request: NextRequest) {
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         sales_avg_sqm_price::double precision AS sales_avg_sqm_price,
         sales_avg_price::double precision AS sales_avg_price,
         offplan_ratio::double precision AS offplan_ratio,
-        sales_avg_area::double precision AS sales_avg_area
+        sales_median_area::double precision AS sales_median_area
       FROM monthly_market_stats
       WHERE year_month IN (${Prisma.join([latestPeriod, prevPeriod, yoyPeriod])})
     `),
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         sales_avg_sqm_price::double precision AS sales_avg_sqm_price,
         sales_avg_price::double precision AS sales_avg_price,
         offplan_ratio::double precision AS offplan_ratio,
-        sales_avg_area::double precision AS sales_avg_area
+        sales_median_area::double precision AS sales_median_area
       FROM monthly_market_stats
       WHERE year_month BETWEEN ${sparklineStart} AND ${latestPeriod}
       ORDER BY year_month
@@ -116,13 +116,13 @@ export async function GET(request: NextRequest) {
         sparkline: sparklineRows.map((row) => row.offplan_ratio * 100),
       },
       {
-        label: "Avg Size (sqm)",
-        value: latest.sales_avg_area,
-        change_mom: pct(latest.sales_avg_area, prev?.sales_avg_area),
-        change_yoy: pct(latest.sales_avg_area, yoy?.sales_avg_area),
+        label: "Median Size (sqm)",
+        value: latest.sales_median_area,
+        change_mom: pct(latest.sales_median_area, prev?.sales_median_area),
+        change_yoy: pct(latest.sales_median_area, yoy?.sales_median_area),
         change_kind: "percent",
         period_type: "complete_month",
-        sparkline: sparklineRows.map((row) => row.sales_avg_area),
+        sparkline: sparklineRows.map((row) => row.sales_median_area),
       },
       {
         label: "YoY Volume",

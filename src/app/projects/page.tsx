@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChartContainer } from "@/components/charts/chart-container";
+import { useChartColors } from "@/lib/chart-colors";
 import {
   BarChart,
   Bar,
@@ -19,13 +20,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-const COLORS = {
-  primary: "#0dff81",
-  secondary: "#445ed0",
-  grid: "rgba(255,255,255,0.06)",
-  text: "rgba(255,255,255,0.45)",
-};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any) {
@@ -55,6 +49,7 @@ interface Project {
 }
 
 export default function ProjectsPage() {
+  const COLORS = useChartColors();
   const { data: projData, isLoading } = useProjects(50, "2025-01");
 
   const projects: Project[] = projData?.data || [];
@@ -91,7 +86,7 @@ export default function ProjectsPage() {
                 width={120}
               />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="volume" name="Volume (AED)" fill={COLORS.primary} radius={[0, 4, 4, 0]} />
+              <Bar dataKey="volume" name="Volume (AED)" fill={COLORS.secondary} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

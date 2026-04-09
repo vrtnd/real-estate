@@ -92,7 +92,7 @@ SELECT
   COALESCE(SUM(amount) FILTER (WHERE trans_group_en = 'Sales'), 0) AS sales_volume,
   AVG(amount) FILTER (WHERE trans_group_en = 'Sales') AS sales_avg_price,
   AVG(meter_sale_price) FILTER (WHERE trans_group_en = 'Sales' AND meter_sale_price > 0) AS sales_avg_sqm_price,
-  AVG(procedure_area) FILTER (WHERE trans_group_en = 'Sales' AND procedure_area > 0) AS sales_avg_area,
+  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY procedure_area) FILTER (WHERE trans_group_en = 'Sales' AND procedure_area > 0) AS sales_median_area,
   COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Off-Plan') AS offplan_sales_count,
   COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready') AS ready_sales_count,
   COUNT(*) FILTER (WHERE trans_group_en = 'Mortgage') AS mortgage_count,

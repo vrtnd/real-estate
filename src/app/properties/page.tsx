@@ -4,7 +4,7 @@ import { usePropertyTypes, useRooms, useDistribution } from "@/hooks/use-dashboa
 import { ChartContainer } from "@/components/charts/chart-container";
 import { KPICard } from "@/components/kpi/kpi-card";
 import { formatAED, formatNumber } from "@/lib/constants";
-import { CHART_COLORS, PROPERTY_COLORS, ROOM_COLORS } from "@/lib/chart-colors";
+import { useChartColors, PROPERTY_COLORS, ROOM_COLORS } from "@/lib/chart-colors";
 import {
   LineChart,
   Line,
@@ -17,14 +17,17 @@ import {
   Cell,
 } from "recharts";
 
-const COLORS = {
-  Unit: PROPERTY_COLORS.Unit,
-  Villa: PROPERTY_COLORS.Villa,
-  Land: PROPERTY_COLORS.Land,
-  Building: PROPERTY_COLORS.Building,
-  grid: CHART_COLORS.grid,
-  text: CHART_COLORS.text,
-};
+function usePageColors() {
+  const chart = useChartColors();
+  return {
+    Unit: PROPERTY_COLORS.Unit,
+    Villa: PROPERTY_COLORS.Villa,
+    Land: PROPERTY_COLORS.Land,
+    Building: PROPERTY_COLORS.Building,
+    grid: chart.grid,
+    text: chart.text,
+  };
+}
 
 const ROOM_ORDER = ["Studio", "1 B/R", "2 B/R", "3 B/R", "4 B/R", "5 B/R"];
 
@@ -45,6 +48,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function PropertiesPage() {
+  const COLORS = usePageColors();
   const { data: ptData, isLoading: ptLoading } = usePropertyTypes("2020-01");
   const { data: roomData, isLoading: roomLoading } = useRooms("2020-01");
   const { data: distData, isLoading: distLoading } = useDistribution({ dateFrom: "2025-01" });
