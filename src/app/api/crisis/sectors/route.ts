@@ -11,6 +11,21 @@ import {
 } from "@/lib/constants";
 import { normalizedPropertyTypeSql, serializeForJson, toDateStart, toDateEnd } from "@/lib/sql";
 
+function inclusiveDays(start: string, end: string): number {
+  const s = new Date(`${start}T00:00:00.000Z`).getTime();
+  const e = new Date(`${end}T00:00:00.000Z`).getTime();
+  return Math.floor((e - s) / 86400000) + 1;
+}
+
+interface SectorRow {
+  type: string;
+  offplan: string;
+  pre_count: number;
+  post_count: number;
+  pre_avg_sqm: number | null;
+  post_avg_sqm: number | null;
+}
+
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const preStart = toDateStart(sp.get("preStart") || PRE_CRISIS_START)!;
@@ -18,11 +33,14 @@ export async function GET(request: NextRequest) {
   const postStart = toDateStart(sp.get("postStart") || POST_CRISIS_START)!;
   const postEnd = toDateEnd(sp.get("postEnd") || POST_CRISIS_END)!;
 
-  const cacheKey = buildCacheKey("crisis_sectors", { preStart, preEnd, postStart, postEnd });
+  const cacheKey = buildCacheKey("crisis_sectors_v2", { preStart, preEnd, postStart, postEnd });
   const cached = getCached<unknown>(cacheKey);
   if (cached) return NextResponse.json(cached);
 
-  const rows = await prisma.$queryRaw(
+  const preDays = inclusiveDays(preStart, preEnd);
+  const postDays = inclusiveDays(postStart, postEnd);
+
+  const rows = await prisma.$queryRaw<SectorRow[]>(
     Prisma.sql`
       WITH pre AS (
         SELECT
@@ -48,18 +66,34 @@ export async function GET(request: NextRequest) {
       SELECT
         COALESCE(pre.type, post.type) AS type,
         COALESCE(pre.offplan, post.offplan) AS offplan,
-        COALESCE(pre.cnt, 0) AS pre_count,
-        COALESCE(post.cnt, 0) AS post_count,
-        CASE WHEN pre.cnt > 0 THEN ROUND(((COALESCE(post.cnt, 0)::numeric / pre.cnt - 1) * 100)::numeric, 1)::double precision ELSE NULL END AS volume_change_pct,
+        COALESCE(pre.cnt, 0)::int AS pre_count,
+        COALESCE(post.cnt, 0)::int AS post_count,
         pre.avg_sqm AS pre_avg_sqm,
-        post.avg_sqm AS post_avg_sqm,
-        CASE WHEN pre.avg_sqm > 0 THEN ROUND(((COALESCE(post.avg_sqm, 0) / pre.avg_sqm - 1) * 100)::numeric, 1)::double precision ELSE NULL END AS price_change_pct
+        post.avg_sqm AS post_avg_sqm
       FROM pre FULL OUTER JOIN post USING (type, offplan)
       ORDER BY COALESCE(pre.cnt, 0) DESC
     `
   );
 
-  const result = serializeForJson({ data: rows });
+  const data = serializeForJson(
+    rows.map((r) => {
+      const preDaily = r.pre_count / preDays;
+      const postDaily = r.post_count / postDays;
+      const volumeChangePct = preDaily > 0
+        ? Math.round(((postDaily / preDaily) - 1) * 1000) / 10
+        : null;
+      const priceChangePct = r.pre_avg_sqm && r.post_avg_sqm && r.pre_avg_sqm > 0
+        ? Math.round(((r.post_avg_sqm / r.pre_avg_sqm) - 1) * 1000) / 10
+        : null;
+      return {
+        ...r,
+        volume_change_pct: volumeChangePct,
+        price_change_pct: priceChangePct,
+      };
+    })
+  );
+
+  const result = { data };
   setCache(cacheKey, result, 1000 * 60 * 30);
   return NextResponse.json(result);
 }

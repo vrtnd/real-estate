@@ -99,6 +99,8 @@ export async function GET(request: NextRequest) {
         lng: r.lng,
         pre_sales: r.pre_sales,
         post_sales: r.post_sales,
+        pre_daily: Math.round(preDailyRate * 10) / 10,
+        post_daily: Math.round(postDailyRate * 10) / 10,
         volume_change_pct: volumeChangePct,
         price_change_pct: priceChangePct,
         pre_avg_sqm: r.pre_avg_sqm,

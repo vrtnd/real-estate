@@ -13,6 +13,8 @@ export interface CrisisMapPoint {
   lng: number;
   pre_sales: number;
   post_sales: number;
+  pre_daily: number;
+  post_daily: number;
   volume_change_pct: number;
   price_change_pct: number | null;
   pre_avg_sqm: number | null;
@@ -131,8 +133,8 @@ export function CrisisMap({
           <div class="map-tip-divider"></div>
           <div class="map-tip-row">Volume <span style="color:${volColor}">${volSign}${point.volume_change_pct.toFixed(1)}%</span></div>
           ${point.price_change_pct != null ? `<div class="map-tip-row">Price/sqm <span style="color:${priceColor}">${priceSign}${point.price_change_pct.toFixed(1)}%</span></div>` : ""}
-          <div class="map-tip-row map-tip-muted">Pre <span>${formatNumber(point.pre_sales)} sales${point.pre_avg_sqm ? ` · ${formatPricePerSqm(point.pre_avg_sqm)}` : ""}</span></div>
-          <div class="map-tip-row map-tip-muted">Post <span>${formatNumber(point.post_sales)} sales${point.post_avg_sqm ? ` · ${formatPricePerSqm(point.post_avg_sqm)}` : ""}</span></div>
+          <div class="map-tip-row map-tip-muted">Pre <span>${point.pre_daily}/day${point.pre_avg_sqm ? ` · ${formatPricePerSqm(point.pre_avg_sqm)}` : ""}</span></div>
+          <div class="map-tip-row map-tip-muted">Post <span>${point.post_daily}/day${point.post_avg_sqm ? ` · ${formatPricePerSqm(point.post_avg_sqm)}` : ""}</span></div>
         </div>
       `;
 
