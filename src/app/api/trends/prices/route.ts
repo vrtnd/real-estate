@@ -34,16 +34,20 @@ export async function GET(request: NextRequest) {
         EXTRACT(MONTH FROM ${periodStart})::int AS month,
         AVG(t.amount) FILTER (WHERE t.trans_group_en = 'Sales')::double precision AS avg_price,
         AVG(t.meter_sale_price) FILTER (
-          WHERE t.trans_group_en = 'Sales' AND t.meter_sale_price > 0
+          WHERE t.trans_group_en = 'Sales' AND t.meter_sale_price > 0 AND t.procedure_area >= 5 AND t.meter_sale_price < 200000
         )::double precision AS avg_sqm_price,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.meter_sale_price) FILTER (
+          WHERE t.trans_group_en = 'Sales' AND t.meter_sale_price > 0 AND t.procedure_area >= 5
+        )::double precision AS median_sqm_price,
         AVG(t.procedure_area) FILTER (
-          WHERE t.trans_group_en = 'Sales' AND t.procedure_area > 0
+          WHERE t.trans_group_en = 'Sales' AND t.procedure_area >= 5
         )::double precision AS avg_area,
         COUNT(*) FILTER (WHERE t.trans_group_en = 'Sales')::int AS sales_count
       FROM transactions_live AS t
       WHERE t.instance_date BETWEEN ${dateFrom}::date AND ${dateTo}::date
       ${areaClause}
       GROUP BY ${periodStart}, ${periodLabel}
+      HAVING COUNT(*) FILTER (WHERE t.trans_group_en = 'Sales') >= 10
       ORDER BY ${periodStart}
     `
   );

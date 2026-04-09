@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
         COUNT(*) FILTER (WHERE trans_group_en = 'Sales')::int AS sales,
         COUNT(*) FILTER (WHERE trans_group_en = 'Mortgage')::int AS mortgages,
         COALESCE(SUM(amount) FILTER (WHERE trans_group_en = 'Sales'), 0)::double precision AS sales_value,
-        AVG(meter_sale_price) FILTER (
-          WHERE trans_group_en = 'Sales' AND meter_sale_price > 0
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY meter_sale_price) FILTER (
+          WHERE trans_group_en = 'Sales' AND meter_sale_price > 0 AND procedure_area >= 5
         )::double precision AS avg_sqm_price,
         COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Off-Plan')::int AS offplan,
         COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready')::int AS ready,

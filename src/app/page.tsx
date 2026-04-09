@@ -99,6 +99,7 @@ type PricePoint = {
   month: number;
   avg_price: number;
   avg_sqm_price: number;
+  median_sqm_price: number;
   avg_area?: number;
   sales_count: number;
 };
@@ -512,11 +513,14 @@ export default function OverviewPage() {
     };
   })();
 
-  // 7-day moving average for daily data
+  // 7-day moving averages for daily data
   const dailyWithMa = dailyPoints.map((point, i, arr) => {
     const window = arr.slice(Math.max(0, i - 6), i + 1);
     const ma7 = window.reduce((s, p) => s + p.sales, 0) / window.length;
-    return { ...point, ma7: Math.round(ma7) };
+    // Only include days with 10+ sales for price MA to avoid weekend/low-volume spikes
+    const sqmWindow = window.filter((p) => p.avg_sqm_price > 0 && p.sales >= 10);
+    const sqm_ma7 = sqmWindow.length >= 3 ? sqmWindow.reduce((s, p) => s + p.avg_sqm_price, 0) / sqmWindow.length : null;
+    return { ...point, ma7: Math.round(ma7), sqm_ma7: sqm_ma7 ? Math.round(sqm_ma7) : null };
   });
 
   return (
@@ -709,12 +713,15 @@ export default function OverviewPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={[0, "auto"]} />
                     <Tooltip content={<DailyTooltip />} />
-                    <ReferenceLine x={EVENT_PRESETS[eventPreset].date} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.8}
+                    <ReferenceLine x={EVENT_PRESETS[eventPreset].date} yAxisId="left" stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.8}
                       label={{ value: EVENT_PRESETS[eventPreset].label, fill: "#f5a623", fontSize: 10, position: "top" }} />
-                    <Bar dataKey="sales" name="Daily Sales" fill={CHART_COLORS.primary} fillOpacity={0.35} radius={[1, 1, 0, 0]} />
-                    <Line dataKey="ma7" name="7-day avg" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                    <Bar yAxisId="left" dataKey="sales" name="Daily Sales" fill={CHART_COLORS.primary} fillOpacity={0.35} radius={[1, 1, 0, 0]} />
+                    <Line yAxisId="left" dataKey="ma7" name="Sales (7d avg)" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" dataKey="sqm_ma7" name="Price/sqm (7d avg)" stroke={CHART_COLORS.tertiary} strokeWidth={1.5} dot={false} connectNulls />
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
@@ -1065,7 +1072,7 @@ export default function OverviewPage() {
 
           {/* Price Trends + Off-Plan */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartContainer title="Price Trends" subtitle="" animationDelay={560}>
+            <ChartContainer title="Price Trends (Median)" subtitle="" animationDelay={560}>
               {priceLoading ? <div className="h-[280px] skeleton" /> : (
                 <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={priceTrend}>
@@ -1074,7 +1081,12 @@ export default function OverviewPage() {
                     <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<ChartTooltip granularity={activeWindow.granularity} />} />
                     {visibleMarkers.map((m) => <ReferenceLine key={m.id} x={m.marker} stroke={m.id === "hormuz" ? "#f5a623" : "#9678b8"} strokeDasharray="4 4" strokeOpacity={0.4} />)}
-                    <Line type="monotone" dataKey="avg_sqm_price" name="Avg Price/sqm" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                    {/* Year labels */}
+                    {priceTrend.filter((p, i, arr) => p.month === 1 && arr.findIndex((x) => x.year === p.year) === i).map((p) => (
+                      <ReferenceLine key={`pyr-${p.year}`} x={p.period} stroke={CHART_COLORS.muted} strokeDasharray="3 6" strokeOpacity={0.25} />
+                    ))}
+                    <Line type="monotone" dataKey="median_sqm_price" name="Median Price/sqm" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="avg_sqm_price" name="Avg Price/sqm" stroke={CHART_COLORS.primary} strokeWidth={1} dot={false} strokeOpacity={0.25} strokeDasharray="4 3" />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -1089,6 +1101,9 @@ export default function OverviewPage() {
                     <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip content={<ChartTooltip granularity={activeWindow.granularity} />} />
                     {visibleMarkers.map((m) => <ReferenceLine key={m.id} x={m.marker} stroke={m.id === "hormuz" ? "#f5a623" : "#9678b8"} strokeDasharray="4 4" strokeOpacity={0.4} />)}
+                    {offplanTrend.filter((p: OffplanPoint, i: number, arr: OffplanPoint[]) => p.month === 1 && arr.findIndex((x) => x.year === p.year) === i).map((p: OffplanPoint) => (
+                      <ReferenceLine key={`oyr-${p.year}`} x={p.period} stroke={CHART_COLORS.muted} strokeDasharray="3 6" strokeOpacity={0.25} />
+                    ))}
                     <Bar dataKey="offplan_count" name="Off-Plan" stackId="a" fill={CHART_COLORS.secondary} />
                     <Bar dataKey="ready_count" name="Ready" stackId="a" fill={colors.readyFill} radius={[2, 2, 0, 0]} />
                   </BarChart>
