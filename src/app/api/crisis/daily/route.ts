@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
         PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY meter_sale_price) FILTER (
           WHERE trans_group_en = 'Sales' AND meter_sale_price > 0 AND procedure_area >= 5
         )::double precision AS avg_sqm_price,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY meter_sale_price) FILTER (
+          WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready' AND meter_sale_price > 0 AND procedure_area >= 5
+        )::double precision AS ready_sqm_price,
         COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Off-Plan')::int AS offplan,
         COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready')::int AS ready,
         CASE

@@ -258,6 +258,13 @@ export function useCrisisGeo(params: {
   });
 }
 
+export function useCrisisPriceSegments(dateFrom = "2025-11-01", dateTo = "2026-04-08") {
+  return useQuery({
+    queryKey: ["crisis_price_segments", dateFrom, dateTo],
+    queryFn: () => fetcher(`/api/crisis/price-segments?dateFrom=${dateFrom}&dateTo=${dateTo}`),
+  });
+}
+
 export function useGeoData(level: "area" | "project" = "area", dateFrom = "2020-01", dateTo = "2026-12") {
   return useQuery({
     queryKey: ["geo", level, dateFrom, dateTo],

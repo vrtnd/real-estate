@@ -14,6 +14,7 @@ import {
   useCrisisMarketComposition,
   useCrisisYoyPacing,
   useCrisisGeo,
+  useCrisisPriceSegments,
 } from "@/hooks/use-dashboard";
 import { KPICard } from "@/components/kpi/kpi-card";
 import { ChartContainer } from "@/components/charts/chart-container";
@@ -153,6 +154,7 @@ type DailyPoint = {
   mortgages: number;
   sales_value: number;
   avg_sqm_price: number;
+  ready_sqm_price: number;
   offplan: number;
   ready: number;
   offplan_pct: number;
@@ -409,6 +411,13 @@ export default function OverviewPage() {
 
   const crisisGeoPoints = (crisisGeoData?.data || []) as CrisisMapPoint[];
 
+  const { data: priceSegData } = useCrisisPriceSegments(
+    selectedEventComparison.dailyFrom,
+    selectedEventComparison.dailyTo
+  );
+  type PriceSegPoint = { week: string; studio: number | null; br1: number | null; br2: number | null; br3: number | null };
+  const priceSegments = (priceSegData?.data || []) as PriceSegPoint[];
+
   const kpis = (kpiData?.kpis || []) as KPIItem[];
   const volumeTrend = (volumeData?.data || []) as VolumePoint[];
   const priceTrend = (priceData?.data || []) as PricePoint[];
@@ -516,11 +525,11 @@ export default function OverviewPage() {
   // 7-day moving averages for daily data
   const dailyWithMa = dailyPoints.map((point, i, arr) => {
     const window = arr.slice(Math.max(0, i - 6), i + 1);
-    const ma7 = window.reduce((s, p) => s + p.sales, 0) / window.length;
-    // Only include days with 10+ sales for price MA to avoid weekend/low-volume spikes
-    const sqmWindow = window.filter((p) => p.avg_sqm_price > 0 && p.sales >= 10);
-    const sqm_ma7 = sqmWindow.length >= 3 ? sqmWindow.reduce((s, p) => s + p.avg_sqm_price, 0) / sqmWindow.length : null;
-    return { ...point, ma7: Math.round(ma7), sqm_ma7: sqm_ma7 ? Math.round(sqm_ma7) : null };
+    const ma7_ready = window.reduce((s, p) => s + p.ready, 0) / window.length;
+    // Only include days with 5+ ready sales for price MA to avoid weekend spikes
+    const sqmWindow = window.filter((p) => p.ready_sqm_price > 0 && p.ready >= 5);
+    const sqm_ma7 = sqmWindow.length >= 3 ? sqmWindow.reduce((s, p) => s + p.ready_sqm_price, 0) / sqmWindow.length : null;
+    return { ...point, ma7_ready: Math.round(ma7_ready), sqm_ma7: sqm_ma7 ? Math.round(sqm_ma7) : null };
   });
 
   return (
@@ -692,7 +701,7 @@ export default function OverviewPage() {
           {/* Daily Impact Timeline — the hero visualization */}
           <div ref={chartSectionRef}>
             <ChartContainer
-              title="Daily Impact Timeline"
+              title="Daily Impact Timeline (Ready Market)"
               subtitle=""
               variant="hero"
               animationDelay={200}
@@ -719,66 +728,73 @@ export default function OverviewPage() {
                     <Tooltip content={<DailyTooltip />} />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date} yAxisId="left" stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.8}
                       label={{ value: EVENT_PRESETS[eventPreset].label, fill: "#f5a623", fontSize: 10, position: "top" }} />
-                    <Bar yAxisId="left" dataKey="sales" name="Daily Sales" fill={CHART_COLORS.primary} fillOpacity={0.35} radius={[1, 1, 0, 0]} />
-                    <Line yAxisId="left" dataKey="ma7" name="Sales (7d avg)" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" dataKey="sqm_ma7" name="Price/sqm (7d avg)" stroke={CHART_COLORS.tertiary} strokeWidth={1.5} dot={false} connectNulls />
+                    <Bar yAxisId="left" dataKey="ready" name="Ready Sales" fill={CHART_COLORS.primary} fillOpacity={0.35} radius={[1, 1, 0, 0]} />
+                    <Line yAxisId="left" dataKey="ma7_ready" name="Ready Sales (7d avg)" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" dataKey="sqm_ma7" name="Ready Price/sqm (7d avg)" stroke={CHART_COLORS.tertiary} strokeWidth={1.5} dot={false} connectNulls />
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
             </ChartContainer>
           </div>
 
-          {/* Two-column: Price Stability + Mortgage Confidence */}
+          {/* Ready Apartment Prices by Bedroom */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ChartContainer
-              title="Price vs Volume Divergence"
-              subtitle=""
+              title="Ready Apartment Prices (Median AED/sqm)"
+              subtitle="Resale flats only — controlled for type, bedroom count"
               animationDelay={300}
             >
-              {dailyLoading ? (
-                <div className="h-[260px] skeleton" />
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <ComposedChart data={dailyWithMa}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
+              {priceSegments.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={priceSegments}>
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
-                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
-                      domain={["dataMin - 2000", "dataMax + 2000"]} />
-                    <Tooltip content={<DailyTooltip />} />
-                    <ReferenceLine x={EVENT_PRESETS[eventPreset].date} yAxisId="left" stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
-                    <Line yAxisId="left" dataKey="ma7" name="Sales (7d avg)" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" dataKey="avg_sqm_price" name="Avg Price/sqm" stroke={CHART_COLORS.tertiary} strokeWidth={1.5} dot={false} strokeOpacity={0.8} />
-                  </ComposedChart>
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} domain={[0, "auto"]} />
+                    <Tooltip content={<ChartTooltip granularity="week" />} />
+                    <ReferenceLine x={EVENT_PRESETS[eventPreset].date} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
+                    <Line type="monotone" dataKey="studio" name="Studio" stroke="#22d3ee" strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br1" name="1 B/R" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br2" name="2 B/R" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br3" name="3 B/R" stroke={CHART_COLORS.tertiary} strokeWidth={2} dot={false} connectNulls />
+                  </LineChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] skeleton" />
               )}
             </ChartContainer>
 
             <ChartContainer
-              title="Mortgage Activity"
-              subtitle=""
+              title="Ready Apt Price Change (indexed to 100)"
+              subtitle="Week of Nov 3 = 100 — tracks relative movement"
               animationDelay={360}
             >
-              {dailyLoading ? (
-                <div className="h-[260px] skeleton" />
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <ComposedChart data={dailyWithMa.map((p, i, arr) => {
-                    const w = arr.slice(Math.max(0, i - 6), i + 1);
-                    return { ...p, mortgage_ma7: Math.round(w.reduce((s, x) => s + x.mortgages, 0) / w.length) };
-                  })}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
+              {priceSegments.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={priceSegments.map((p) => ({
+                    week: p.week,
+                    studio: p.studio && priceSegments[0]?.studio ? Math.round(p.studio / priceSegments[0].studio * 1000) / 10 : null,
+                    br1: p.br1 && priceSegments[0]?.br1 ? Math.round(p.br1 / priceSegments[0].br1 * 1000) / 10 : null,
+                    br2: p.br2 && priceSegments[0]?.br2 ? Math.round(p.br2 / priceSegments[0].br2 * 1000) / 10 : null,
+                    br3: p.br3 && priceSegments[0]?.br3 ? Math.round(p.br3 / priceSegments[0].br3 * 1000) / 10 : null,
+                  }))}>
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: colors.text }} tickLine={false} axisLine={false}
                       interval="preserveStartEnd" minTickGap={40}
                       tickFormatter={(v) => shortDateFormatter.format(isoToDate(v))} />
-                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false} />
-                    <Tooltip content={<DailyTooltip />} />
+                    <YAxis tick={{ fontSize: 11, fill: colors.text }} tickLine={false} axisLine={false}
+                      domain={[85, 120]} />
+                    <Tooltip content={<ChartTooltip granularity="week" />} />
+                    <ReferenceLine y={100} stroke={CHART_COLORS.muted} strokeDasharray="3 3" />
                     <ReferenceLine x={EVENT_PRESETS[eventPreset].date} stroke="#f5a623" strokeDasharray="4 4" strokeOpacity={0.5} />
-                    <Bar dataKey="mortgages" name="Daily Mortgages" fill={CHART_COLORS.purple} fillOpacity={0.3} radius={[1, 1, 0, 0]} />
-                    <Line dataKey="mortgage_ma7" name="7-day avg" stroke={CHART_COLORS.purple} strokeWidth={2} dot={false} />
-                  </ComposedChart>
+                    <Line type="monotone" dataKey="studio" name="Studio" stroke="#22d3ee" strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br1" name="1 B/R" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br2" name="2 B/R" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="br3" name="3 B/R" stroke={CHART_COLORS.tertiary} strokeWidth={2} dot={false} connectNulls />
+                  </LineChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] skeleton" />
               )}
             </ChartContainer>
           </div>
