@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IngestRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model IngestRun {
+  id                    BigInt          @id @default(autoincrement())
+  sourceFile            String          @map("source_file")
+  sourceChecksum        String          @map("source_checksum")
+  sourceFormat          String?         @map("source_format")
+  status                IngestRunStatus @default(RUNNING)
+  insertedRowCount      Int             @default(0) @map("inserted_row_count")
+  liveRowCount          Int             @default(0) @map("live_row_count")
+  exactDuplicateCount   Int             @default(0) @map("exact_duplicate_count")
+  invalidDateCount      Int             @default(0) @map("invalid_date_count")
+  excludedByCutoffCount Int             @default(0) @map("excluded_by_cutoff_count")
+  startedAt             DateTime        @default(now()) @map("started_at")
+  finishedAt            DateTime?       @map("finished_at")
+  errorMessage          String?         @map("error_message")
+  metadata              Json?
+
+  transactions          Transaction[]
+
+  @@map("ingest_runs")
+}
+
+model AreaAlias {
+  sourceAreaName String   @id @map("source_area_name")
+  canonicalArea  String   @map("canonical_area")
+  displayArea    String   @map("display_area")
+  aliasSource    String   @default("seed") @map("alias_source")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("area_aliases")
+}
+
+model Transaction {
+  id                 BigInt    @id @default(autoincrement())
+  ingestRunId        BigInt    @map("ingest_run_id")
+  sourceFile         String    @map("source_file")
+  sourceFormat       String    @map("source_format")
+  sourceFileDate     DateTime? @map("source_file_date") @db.Date
+  sourceRowNumber    Int       @map("source_row_number")
+  sourceRowHash      String    @map("source_row_hash")
+  canonicalRowHash   String    @map("canonical_row_hash")
+  transactionId      String?   @map("transaction_id")
+  instanceDate       DateTime? @map("instance_date") @db.Date
+  year               Int?
+  month              Int?
+  yearMonth          String?   @map("year_month")
+  quarter            String?
+  transGroupEn       String    @map("trans_group_en")
+  procedureNameEn    String    @map("procedure_name_en")
+  isOffplan          String    @map("is_offplan")
+  isFreehold         String?   @map("is_freehold")
+  propertyUsageEn    String    @map("property_usage_en")
+  normalizedArea     String    @map("normalized_area")
+  displayArea        String    @map("display_area")
+  areaNameEn         String    @map("area_name_en")
+  propertyTypeEn     String    @map("property_type_en")
+  propertySubTypeEn  String    @map("property_sub_type_en")
+  amount             Decimal   @db.Decimal(18, 2)
+  procedureArea      Decimal?  @map("procedure_area") @db.Decimal(18, 2)
+  actualArea         Decimal?  @map("actual_area") @db.Decimal(18, 2)
+  meterSalePrice     Decimal?  @map("meter_sale_price") @db.Decimal(18, 2)
+  rentValue          Decimal?  @map("rent_value") @db.Decimal(18, 2)
+  meterRentPrice     Decimal?  @map("meter_rent_price") @db.Decimal(18, 2)
+  roomsEn            String    @map("rooms_en")
+  parkingCount       Int?      @map("parking_count")
+  hasParking         Boolean   @default(false) @map("has_parking")
+  nearestMetroEn     String    @map("nearest_metro_en")
+  nearestMallEn      String    @map("nearest_mall_en")
+  nearestLandmarkEn  String    @map("nearest_landmark_en")
+  numBuyers          Int       @map("num_buyers")
+  numSellers         Int       @map("num_sellers")
+  masterProjectEn    String    @map("master_project_en")
+  projectNameEn      String    @map("project_name_en")
+  buildingNameEn     String?   @map("building_name_en")
+  source             String
+  isInvalidDate      Boolean   @default(false) @map("is_invalid_date")
+  isExactDuplicate   Boolean   @default(false) @map("is_exact_duplicate")
+  isExcludedByCutoff Boolean   @default(false) @map("is_excluded_by_cutoff")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  ingestRun          IngestRun @relation(fields: [ingestRunId], references: [id], onDelete: Cascade)
+
+  @@index([ingestRunId], map: "transactions_ingest_run_id_idx")
+  @@index([sourceFormat], map: "transactions_source_format_idx")
+  @@index([sourceRowHash], map: "transactions_source_row_hash_idx")
+  @@index([canonicalRowHash], map: "transactions_canonical_row_hash_idx")
+  @@index([instanceDate], map: "transactions_instance_date_idx")
+  @@index([yearMonth], map: "transactions_year_month_idx")
+  @@index([transGroupEn, instanceDate], map: "transactions_trans_group_instance_date_idx")
+  @@index([normalizedArea, instanceDate], map: "transactions_normalized_area_instance_date_idx")
+  @@index([propertyTypeEn, instanceDate], map: "transactions_property_type_instance_date_idx")
+  @@index([isOffplan, instanceDate], map: "transactions_is_offplan_instance_date_idx")
+  @@index([roomsEn, instanceDate], map: "transactions_rooms_instance_date_idx")
+  @@index([projectNameEn, instanceDate], map: "transactions_project_instance_date_idx")
+  @@index([isInvalidDate, isExactDuplicate, isExcludedByCutoff], map: "transactions_live_flags_idx")
+  @@map("transactions")
+}
+
+model GeoCoordinate {
+  id           Int      @id @default(autoincrement())
+  entityType   String   @map("entity_type") // "area" or "project"
+  entityName   String   @map("entity_name") // normalized_area or project_name_en
+  displayName  String   @map("display_name")
+  bayutId      Int?     @map("bayut_id")
+  bayutLevel   String?  @map("bayut_level") // "community", "sub_community", "cluster"
+  bayutName    String?  @map("bayut_name")
+  lat          Decimal  @db.Decimal(12, 8)
+  lng          Decimal  @db.Decimal(12, 8)
+  txnCount     Int      @default(0) @map("txn_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([entityType, entityName], map: "geo_coordinates_entity_unique")
+  @@map("geo_coordinates")
+}

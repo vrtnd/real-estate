@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next:*)",
+      "Bash(PGPASSWORD=c76gGcvQtXI6o9a846HL21Zqg1UE1OiRDv7QMtGdz1R8h3syDKjN7OI48qPWCC3l psql -h 37.27.110.74 -p 6600 -U postgres -d postgres -c \"\\\\dt+\")",
+      "Bash(PGPASSWORD=c76gGcvQtXI6o9a846HL21Zqg1UE1OiRDv7QMtGdz1R8h3syDKjN7OI48qPWCC3l psql -h 37.27.110.74 -p 6600 -U postgres -d postgres -c \"\\\\dv+\")"
+    ]
+  }
+}
