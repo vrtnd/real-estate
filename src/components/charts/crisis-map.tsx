@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { formatNumber, formatPricePerSqm } from "@/lib/constants";
+import { useTheme } from "@/lib/theme";
 
 export interface CrisisMapPoint {
   area: string;
@@ -20,8 +21,14 @@ export interface CrisisMapPoint {
 
 type CrisisMetric = "volume_change_pct" | "price_change_pct";
 
+const TILES = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+};
+const BG = { dark: "#0d1117", light: "#f0f2f5" };
+const STROKE = { dark: "rgba(255,255,255,0.25)", light: "rgba(0,0,0,0.15)" };
+
 function divergingColor(value: number, absMax: number): string {
-  // Red (negative) → neutral → Green (positive)
   const t = absMax === 0 ? 0 : Math.max(-1, Math.min(1, value / absMax));
   if (t < 0) {
     const intensity = -t;
@@ -49,9 +56,11 @@ export function CrisisMap({
   data: CrisisMapPoint[];
   metric?: CrisisMetric;
 }) {
+  const { theme } = useTheme();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -63,7 +72,7 @@ export function CrisisMap({
       attributionControl: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    tileRef.current = L.tileLayer(TILES[theme], {
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
@@ -76,8 +85,19 @@ export function CrisisMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Swap tiles when theme changes
+  useEffect(() => {
+    if (!mapRef.current || !tileRef.current) return;
+    tileRef.current.setUrl(TILES[theme]);
+    if (containerRef.current) {
+      containerRef.current.style.background = BG[theme];
+    }
+  }, [theme]);
 
   useEffect(() => {
     const layer = layerRef.current;
@@ -119,7 +139,7 @@ export function CrisisMap({
       L.circleMarker([point.lat, point.lng], {
         radius,
         fillColor: color,
-        color: "rgba(255,255,255,0.25)",
+        color: STROKE[theme],
         weight: 1,
         opacity: 0.9,
         fillOpacity: 0.75,
@@ -132,13 +152,13 @@ export function CrisisMap({
         })
         .addTo(layer);
     }
-  }, [data, metric]);
+  }, [data, metric, theme]);
 
   return (
     <div
       ref={containerRef}
       className="w-full h-full rounded-lg overflow-hidden"
-      style={{ minHeight: 300, background: "#0d1117" }}
+      style={{ minHeight: 300, background: BG[theme] }}
     />
   );
 }

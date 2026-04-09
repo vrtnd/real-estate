@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { formatAED, formatNumber, formatPricePerSqm } from "@/lib/constants";
+import { useTheme } from "@/lib/theme";
 
 export interface MapPoint {
   name: string;
@@ -21,9 +22,15 @@ export interface MapPoint {
 
 type ColorMetric = "avg_sqm_price" | "sales_count" | "sales_volume" | "offplan_ratio";
 
+const TILES = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+};
+const BG = { dark: "#0d1117", light: "#f0f2f5" };
+const STROKE = { dark: "rgba(255,255,255,0.3)", light: "rgba(0,0,0,0.2)" };
+
 function getColor(value: number, min: number, max: number): string {
   const t = max === min ? 0.5 : (value - min) / (max - min);
-  // Blue (cold/low) → Cyan → Green → Yellow → Red (hot/high)
   const r = Math.round(t < 0.5 ? 0 : t < 0.75 ? (t - 0.5) * 4 * 255 : 255);
   const g = Math.round(t < 0.25 ? t * 4 * 255 : t < 0.75 ? 255 : (1 - t) * 4 * 255);
   const b = Math.round(t < 0.5 ? (1 - t * 2) * 255 : 0);
@@ -46,9 +53,11 @@ export function DubaiMap({
   colorMetric?: ColorMetric;
   level?: "area" | "project";
 }) {
+  const { theme } = useTheme();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -61,7 +70,7 @@ export function DubaiMap({
       attributionControl: true,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    tileRef.current = L.tileLayer(TILES[theme], {
       attribution: '&copy; <a href="https://www.openstreetmap.org">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
       subdomains: "abcd",
       maxZoom: 19,
@@ -73,8 +82,19 @@ export function DubaiMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Swap tiles when theme changes
+  useEffect(() => {
+    if (!mapRef.current || !tileRef.current) return;
+    tileRef.current.setUrl(TILES[theme]);
+    if (containerRef.current) {
+      containerRef.current.style.background = BG[theme];
+    }
+  }, [theme]);
 
   // Update markers when data or metric changes
   useEffect(() => {
@@ -125,7 +145,7 @@ export function DubaiMap({
       L.circleMarker([point.lat, point.lng], {
         radius,
         fillColor: color,
-        color: "rgba(255,255,255,0.3)",
+        color: STROKE[theme],
         weight: 1,
         opacity: 0.9,
         fillOpacity: 0.7,
@@ -138,13 +158,13 @@ export function DubaiMap({
         })
         .addTo(layer);
     }
-  }, [data, colorMetric, level]);
+  }, [data, colorMetric, level, theme]);
 
   return (
     <div
       ref={containerRef}
       className="w-full h-full rounded-lg overflow-hidden"
-      style={{ minHeight: 500, background: "#0d1117" }}
+      style={{ minHeight: 500, background: BG[theme] }}
     />
   );
 }

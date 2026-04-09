@@ -17,7 +17,10 @@ interface WindowStatsRow {
   avg_price_sqm: number;
   offplan_ratio: number;
   mortgage_count: number;
-  median_size_sqm: number;
+  ready_share: number;
+  resale_daily_rate: number;
+  ready_avg_price: number;
+  mid_luxury_count: number;
 }
 
 function inclusiveDays(start: string, end: string): number {
@@ -26,7 +29,7 @@ function inclusiveDays(start: string, end: string): number {
   return Math.floor((endMs - startMs) / 86400000) + 1;
 }
 
-async function getWindowStats(start: string, end: string) {
+async function getWindowStats(start: string, end: string, days: number) {
   const rows = await prisma.$queryRaw<WindowStatsRow[]>(
     Prisma.sql`
       SELECT
@@ -42,9 +45,28 @@ async function getWindowStats(start: string, end: string) {
           ELSE 0
         END AS offplan_ratio,
         COUNT(*) FILTER (WHERE trans_group_en = 'Mortgage')::int AS mortgage_count,
-        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY procedure_area) FILTER (
-          WHERE trans_group_en = 'Sales' AND procedure_area > 0
-        )::double precision AS median_size_sqm
+        -- Ready market share
+        CASE
+          WHEN COUNT(*) FILTER (WHERE trans_group_en = 'Sales') > 0 THEN
+            COUNT(*) FILTER (WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready')::double precision
+            / COUNT(*) FILTER (WHERE trans_group_en = 'Sales')
+          ELSE 0
+        END AS ready_share,
+        -- Resale (secondary) daily count
+        (COUNT(*) FILTER (
+          WHERE trans_group_en = 'Sales'
+            AND (procedure_name_en ILIKE '%sell%' OR procedure_name_en ILIKE '%sale%')
+            AND procedure_name_en NOT ILIKE '%pre-registration%'
+            AND procedure_name_en NOT ILIKE '%pre registration%'
+        )::double precision / ${days}) AS resale_daily_rate,
+        -- Ready property avg price
+        AVG(amount) FILTER (
+          WHERE trans_group_en = 'Sales' AND is_offplan = 'Ready'
+        )::double precision AS ready_avg_price,
+        -- 3M-5M band count
+        COUNT(*) FILTER (
+          WHERE trans_group_en = 'Sales' AND amount >= 3000000 AND amount < 5000000
+        )::int AS mid_luxury_count
       FROM transactions_live
       WHERE instance_date BETWEEN ${start}::date AND ${end}::date
     `
@@ -64,9 +86,9 @@ export async function GET(request: NextRequest) {
   const cached = getCached<unknown>(cacheKey);
   if (cached) return NextResponse.json(cached);
 
-  const [preStats, postStats] = await Promise.all([getWindowStats(preStart, preEnd), getWindowStats(postStart, postEnd)]);
   const preDays = inclusiveDays(preStart, preEnd);
   const postDays = inclusiveDays(postStart, postEnd);
+  const [preStats, postStats] = await Promise.all([getWindowStats(preStart, preEnd, preDays), getWindowStats(postStart, postEnd, postDays)]);
 
   const pct = (post: number, pre: number) => (pre > 0 ? ((post - pre) / pre) * 100 : 0);
 
@@ -112,10 +134,34 @@ export async function GET(request: NextRequest) {
       period_type: "date_window",
     },
     {
-      metric: "Median Size (sqm)",
-      pre_value: preStats.median_size_sqm,
-      post_value: postStats.median_size_sqm,
-      change_pct: pct(postStats.median_size_sqm, preStats.median_size_sqm),
+      metric: "Ready Market Share",
+      pre_value: preStats.ready_share * 100,
+      post_value: postStats.ready_share * 100,
+      change_pct: (postStats.ready_share - preStats.ready_share) * 100,
+      change_kind: "percentage_points",
+      period_type: "date_window",
+    },
+    {
+      metric: "Daily Resale Volume",
+      pre_value: preStats.resale_daily_rate,
+      post_value: postStats.resale_daily_rate,
+      change_pct: pct(postStats.resale_daily_rate, preStats.resale_daily_rate),
+      change_kind: "percent",
+      period_type: "date_window",
+    },
+    {
+      metric: "Ready Avg Price (AED)",
+      pre_value: preStats.ready_avg_price,
+      post_value: postStats.ready_avg_price,
+      change_pct: pct(postStats.ready_avg_price, preStats.ready_avg_price),
+      change_kind: "percent",
+      period_type: "date_window",
+    },
+    {
+      metric: "Mid-Luxury (3-5M) Daily",
+      pre_value: preStats.mid_luxury_count / preDays,
+      post_value: postStats.mid_luxury_count / postDays,
+      change_pct: pct(postStats.mid_luxury_count / postDays, preStats.mid_luxury_count / preDays),
       change_kind: "percent",
       period_type: "date_window",
     },
