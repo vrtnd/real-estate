@@ -51,6 +51,7 @@ import {
   ChevronUp,
   TrendingDown,
   TrendingUp,
+  Info,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { CrisisMapPoint } from "@/components/charts/crisis-map";
@@ -691,6 +692,14 @@ export default function OverviewPage() {
               subtitle=""
               variant="hero"
               animationDelay={200}
+              action={
+                <div className="relative group">
+                  <Info className="w-4 h-4 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors" />
+                  <div className="absolute right-0 top-6 z-50 w-64 px-3 py-2.5 rounded-lg bg-popover border border-border shadow-xl text-[11px] text-muted-foreground leading-relaxed opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                    <p><span className="text-foreground font-medium">Note:</span> Pre-2026 historical DLD data recorded weekend transactions under the next weekday, inflating weekday counts. 2026+ data includes actual weekend entries. This may cause visible pattern differences across the boundary.</p>
+                  </div>
+                </div>
+              }
             >
               {dailyLoading ? (
                 <div className="h-[350px] skeleton" />
